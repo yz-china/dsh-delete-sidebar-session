@@ -83,6 +83,9 @@ jobs:
       - name: 语言探测测试
         run: node test-locale.mjs
 
+      - name: 归档会话测试
+        run: node test-archived.mjs
+
       - name: 端到端测试
         run: node e2e.mjs
 

@@ -315,7 +315,15 @@ async function purgeBackups(home, sessionId, budget) {
 }
 
 /**
- * 用官方注册表把该会话从归档/置顶集合里摘掉。
+ * 用官方注册表把该会话从**三处**登记里摘掉：工作区成员、归档集合、置顶集合。
+ *
+ * 三处缺一不可，这是「归档会话删除后卡死」的根因：
+ *   - `sessionIds`（工作区成员）→ `Workspace.detachSession()`
+ *   - `archivedSessionIds`      → `unarchiveSession()`
+ *   - `pinnedSessionIds`        → `unpinSession()`
+ *
+ * 只清归档不清成员时，前端仍会渲染这一行，但会话实例已随文件消失，
+ * 于是渲染等待一个永远不来的人 —— 表现为卡死。
  *
  * `unarchiveSession` 不要求会话仍存在（它只做集合删除），正是这里需要的语义。
  * @param {object | undefined} registry - `ctx.workspaceRegistry`。
@@ -330,14 +338,36 @@ async function detachRegistry(registry, sessionId) {
   const errors = []
   const attempt = async (name, fn) => {
     if (typeof fn !== 'function') return
-    try { await fn.call(registry) ; done.push(name) } catch (error) {
+    try { await fn.call(registry); done.push(name) } catch (error) {
       errors.push(`${name}: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
+
+  // 1) 工作区成员登记：找出把这个会话算作成员的那个 Workspace，对它 detachSession。
+  try {
+    const workspaces = typeof registry.list === 'function' ? registry.list() : []
+    for (const workspace of workspaces) {
+      let member = false
+      try { member = Array.isArray(workspace?.sessionIds) && workspace.sessionIds.includes(sessionId) } catch { member = false }
+      if (!member) continue
+      if (typeof workspace.detachSession !== 'function') {
+        errors.push('detachSession: Workspace 未提供该方法')
+        continue
+      }
+      await workspace.detachSession(sessionId)
+      done.push('detachSession')
+    }
+  } catch (error) {
+    errors.push(`detachSession: ${error instanceof Error ? error.message : String(error)}`)
+  }
+
+  // 2) 归档集合
   await attempt('unarchiveSession', () => registry.unarchiveSession(sessionId))
+  // 3) 置顶集合
   await attempt('unpinSession', () => registry.unpinSession(sessionId))
+
   if (done.length === 0 && errors.length === 0) {
-    return { via: 'unavailable', ok: false, error: '注册表没有 unarchive/unpin 接口' }
+    return { via: 'unavailable', ok: false, error: '注册表没有 list/detachSession/unarchive/unpin 接口' }
   }
   return {
     via: 'registry',
