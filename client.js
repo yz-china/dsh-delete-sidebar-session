@@ -20,6 +20,26 @@ window.__ModuleLoader__.load({
     /** 单次删除的超时上限（毫秒）。超过即在弹窗里报错并恢复按钮，绝不无限等待。 */
     const TIMEOUT_MS = 45000
 
+    /** 列表重拉的超时上限。它只是收尾对齐，不值得让用户等太久。 */
+    const REFRESH_TIMEOUT_MS = 8000
+
+    /**
+     * 给任意 promise 套一个上界。超时按时长返回而不是抛错时，调用方可以自行决定如何处理。
+     * @param {Promise<unknown>} promise - 被限时的操作。
+     * @param {number} ms - 上限毫秒。
+     * @param {string} label - 超时信息里标识哪一步。
+     * @returns {Promise<unknown>} 原结果，或超时后 reject。
+     */
+    function withTimeout(promise, ms, label) {
+      return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(
+          () => reject(new Error(`${label} 超时（${Math.round(ms / 1000)}s）`)),
+          ms,
+        )),
+      ])
+    }
+
     const ZH = {
       menuLabel: '彻底删除会话',
       menuLabelRunning: '彻底删除会话（运行中）',
@@ -528,10 +548,20 @@ window.__ModuleLoader__.load({
                   } catch { /* 回落失败不影响删除结果 */ }
                 }
 
-                // 4) 与磁盘对齐。refresh 之后 live 条目可能被合并回来，
-                //    所以每次 refresh 完都要再执行一遍抑制。
+                // 4) 与磁盘对齐。
+                //
+                //    这一步最容易挂住：`refresh()` 会向宿主重拉整份列表，
+                //    而列表里可能还含「已归档、live Agent 仍在内存、文件已删」的条目。
+                //    所以 refresh 必须限时，且失败绝不能拖住整个删除流程 ——
+                //    删除本身在 Host 侧已经完成了，列表对齐只是锦上添花。
                 const refresh = async () => {
-                  try { await sessions?.refresh?.() } catch { /* 下次拉取会自愈 */ }
+                  try {
+                    await withTimeout(
+                      Promise.resolve(sessions?.refresh?.()),
+                      REFRESH_TIMEOUT_MS,
+                      'refresh',
+                    )
+                  } catch { /* 列表未能重拉不影响删除结果，抑制表会兜住 */ }
                   enforceSuppression(sessions)
                 }
                 await refresh()

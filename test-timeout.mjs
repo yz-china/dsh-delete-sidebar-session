@@ -229,6 +229,26 @@ async function main() {
     assert.equal(calls, 1, '只应执行一次')
   })
 
+  await ok('列表重拉挂住时，删除仍照常收尾', async () => {
+    // 模拟已删完但 refresh 永不返回：onConfirm 自己限时，应当正常 finish
+    let refreshed = false
+    const d = runDialog({
+      onConfirm: async () => {
+        try {
+          await Promise.race([
+            new Promise(() => {}),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('refresh 超时')), 50)),
+          ])
+        } catch { /* 吸掉：列表对齐失败不影响删除结果 */ }
+        refreshed = true
+      },
+    })
+    d.buttons.confirmBtn.click()
+    const result = await d.done
+    assert.equal(result, true, '删除应当成功收尾')
+    assert.equal(refreshed, true, '应走到收尾')
+  })
+
   console.log(`\n全部通过：${passed} 项`)
 }
 
