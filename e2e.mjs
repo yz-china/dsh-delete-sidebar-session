@@ -50,7 +50,7 @@ function makeContext(services) {
 }
 
 async function main() {
-  console.log('dsh-session-purge e2e')
+  console.log('dsh-delete-sidebar-session e2e')
 
   const home = await mkdtemp(join(tmpdir(), 'dsh-purge-e2e-'))
   const projectDir = join(home, 'sessions', projectKey(CWD))

@@ -1,4 +1,4 @@
-# dsh-session-purge · 会话彻底删除
+# dsh-delete-sidebar-session · 会话彻底删除
 
 [English](README.md) | 简体中文
 
@@ -83,21 +83,21 @@ for (const session of this._ctx.sessions.list()) {
 
 ### 方式一：插件市场
 
-在市场里搜索「会话彻底删除」或 `dsh-session-purge` 即可。
+在市场里搜索「会话彻底删除」或 `dsh-delete-sidebar-session` 即可。
 
 ### 方式二：手动
 
 ```bash
 cd ~/.dsh/profiles/desktop
-pnpm add dsh-session-purge
+pnpm add dsh-delete-sidebar-session
 ```
 
-然后在 `package.json` 的 `dsh.profile.bundles` 里加一行 `"dsh-session-purge"`，重启 DSH。
+然后在 `package.json` 的 `dsh.profile.bundles` 里加一行 `"dsh-delete-sidebar-session"`，重启 DSH。
 
 ### 方式三：源码链接
 
 ```bash
-ln -s /path/to/dsh-session-purge ~/.dsh/profiles/desktop/node_modules/dsh-session-purge   # Windows 用 mklink /J
+ln -s /path/to/dsh-session-purge ~/.dsh/profiles/desktop/node_modules/dsh-delete-sidebar-session   # Windows 用 mklink /J
 ```
 
 ## 配置
@@ -105,7 +105,7 @@ ln -s /path/to/dsh-session-purge ~/.dsh/profiles/desktop/node_modules/dsh-sessio
 ```yaml
 - insert:
     - id: session-purge
-      name: 'dsh-session-purge'
+      name: 'dsh-delete-sidebar-session'
       config:
         enabled: true
         homeEnv: DSH_HOME

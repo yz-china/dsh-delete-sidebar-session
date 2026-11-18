@@ -53,7 +53,7 @@ function ok(name, fn) {
   console.log(`  ok  ${name}`)
 }
 
-console.log('dsh-session-purge locale test')
+console.log('dsh-delete-sidebar-session locale test')
 
 ok('DSH=zh + 浏览器=en → 中文（旧实现的缺陷）', () => {
   assert.equal(pickLocale(serviceWith('zh'), { html: 'en-US', nav: 'en-US' }), 'ZH')

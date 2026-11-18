@@ -37,7 +37,7 @@
   },
   "plugins": [
     {
-      "name": "dsh-session-purge",
+      "name": "dsh-delete-sidebar-session",
       "title": {
         "en": "Session Purge",
         "zh": "会话彻底删除"

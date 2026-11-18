@@ -1,4 +1,4 @@
-# dsh-session-purge
+# dsh-delete-sidebar-session
 
 在 DeepSeek Harness 侧边栏**右键会话 →「彻底删除会话」**，一次清干净，**删完当场消失，不用重启**。
 
@@ -94,7 +94,7 @@ for (const session of this._ctx.sessions.list()) {
 ```yaml
 - insert:
     - id: session-purge
-      name: 'dsh-session-purge'
+      name: 'dsh-delete-sidebar-session'
       config:
         enabled: true
         homeEnv: DSH_HOME

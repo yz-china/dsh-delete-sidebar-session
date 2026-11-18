@@ -1,4 +1,4 @@
-# dsh-session-purge bundle patch.
+# dsh-delete-sidebar-session bundle patch.
 #
 # 只挂载本包一行插件，不替换任何官方组件。
 # Host 半负责：解析会话路径 → 删除会话目录 / 投影缓存 / 工作区索引引用 / 本地备份。
@@ -8,7 +8,7 @@
 # 前缀路由，重复路由会让整棵插件树启动失败。
 - insert:
     - id: session-purge
-      name: 'dsh-session-purge'
+      name: 'dsh-delete-sidebar-session'
       config:
         # 总开关。
         enabled: true

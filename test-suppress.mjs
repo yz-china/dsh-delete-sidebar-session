@@ -66,7 +66,7 @@ async function ok(name, fn) {
 }
 
 async function main() {
-  console.log('dsh-session-purge suppression test')
+  console.log('dsh-delete-sidebar-session suppression test')
 
   await ok('先复现缺陷：只刷新不做抑制，已删行会复活', async () => {
     const sessions = makeHost([TARGET, KEEP])

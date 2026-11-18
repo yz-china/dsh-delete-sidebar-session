@@ -1,5 +1,5 @@
 /**
- * Host half of dsh-session-purge.
+ * Host half of dsh-delete-sidebar-session.
  *
  * 在宿主 Web 服务上挂一条前缀路由 `/session-purge/api`，并在删除完成时
  * 用**官方服务**收尾，让侧边栏无需重启就能消失：

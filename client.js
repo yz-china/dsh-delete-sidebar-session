@@ -1,5 +1,5 @@
 /**
- * Browser half of dsh-session-purge.
+ * Browser half of dsh-delete-sidebar-session.
  *
  * 只贡献一条界面：`sidebar.workspaces.session.menu.item` 插槽里的
  * 「彻底删除会话」菜单项。数据来自 Host 侧 `/session-purge/api` 前缀路由。
@@ -10,7 +10,7 @@
  */
 
 window.__ModuleLoader__.load({
-  id: 'dsh-session-purge',
+  id: 'dsh-delete-sidebar-session',
   factory(require) {
     const React = require('react')
 

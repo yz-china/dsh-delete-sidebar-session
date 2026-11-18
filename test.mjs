@@ -1,5 +1,5 @@
 /**
- * dsh-session-purge 自测：在临时目录里造一份假的 DSH 数据根，验证
+ * dsh-delete-sidebar-session 自测：在临时目录里造一份假的 DSH 数据根，验证
  * 会话目录、投影缓存、工作区索引、备份副本四类目标都被精确清理，
  * 且不相关的数据一个字节都不动；同时覆盖注册表优先路径与 live Agent 探测。
  *
@@ -84,7 +84,7 @@ function fakeRegistry({ fail = false } = {}) {
 }
 
 async function main() {
-  console.log('dsh-session-purge self test')
+  console.log('dsh-delete-sidebar-session self test')
 
   await ok('projectKey 与宿主同名规则一致', async () => {
     assert.equal(projectKey(CWD), '--F-ASNIA-Desktop-Workspace1--')
