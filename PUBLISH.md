@@ -233,3 +233,33 @@ npmjs.com → 你的包 → Settings 标签
 
 切换后，带 `bypass_2fa` 的旧 GAT 立即失去发布能力，但 **OIDC 完全不受影响**。
 所以务必先确认 OIDC 能发布，再收紧。
+
+---
+
+## 8. 新包的首次发布（唯一的例外）
+
+OIDC 只对**已存在**的包生效。npm 明确要求：
+
+> npm requires a package to exist before you can configure trusted publishing.
+
+所以：
+
+| 场景 | 需要长期 token 吗 |
+|---|---|
+| 已配 OIDC 的包发新版本 | ❌ 不需要，永久自动 |
+| **全新包名的首次发布** | ✅ **需要一次认证** |
+| 新包首次发完并配好 OIDC | ❌ 不需要 |
+
+### 首次发布的三种做法
+
+1. **用 GAT token 发**：生成一个带 `bypass_2fa` 的 Granular Token，`npm publish` 一次。
+   注意 `bypass_2fa` 的 GAT 正在被逐步限制（发布能力 2027-01 起受限）。
+2. **网页登录后本地发**：`npm login`（会走浏览器 + 2FA），然后 `npm publish`。
+   凭据只留在本机，最安全。
+3. **提前占位**：在 token 有效期内先把包建出来。仅在**确定包名**时可行，
+   npm 对包名囤积敏感，不宜滥用。
+
+首次发完立刻配 Trusted Publishing（见第 7 节），之后这个包就永久免 token 了。
+
+> 已知的 token 到期：2027-02-16（90 天）。到期后已配 OIDC 的包不受影响，
+> 只有「当时才出现的新包名」需要重新获取一次认证。
