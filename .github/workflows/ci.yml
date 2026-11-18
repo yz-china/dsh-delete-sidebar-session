@@ -1,0 +1,149 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['22', '24']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: 语法检查
+        run: |
+          node --check index.js
+          node --check client.js
+
+      - name: 编码检查（禁止乱码）
+        run: |
+          node -e "
+          const fs=require('fs');
+          // 只检查文本类文件，二进制（tgz/图片）会被误判
+          const TEXT=/\.(md|json|js|mjs|yml|yaml|svg|txt)$/i;
+          const files=fs.readdirSync('.').filter(f=>fs.statSync(f).isFile()&&TEXT.test(f));
+          let bad=[];
+          for (const f of files) {
+            const t=fs.readFileSync(f,'utf8');
+            if (/\uFFFD/.test(t)) bad.push(f);
+          }
+          if (bad.length) { console.error('乱码文件:', bad); process.exit(1) }
+          console.log('编码检查通过，共扫描', files.length, '个文本文件');
+          "
+
+      - name: JSON 合法性
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); console.log('package.json OK')"
+          node -e "JSON.parse(require('fs').readFileSync('market-index.json','utf8')); console.log('market-index.json OK')"
+
+      - name: 名称一致性
+        run: |
+          node -e "
+          const fs=require('fs');
+          const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));
+          const patch=fs.readFileSync('cordis.patch.yml','utf8');
+          const client=fs.readFileSync('client.js','utf8');
+          const idx=JSON.parse(fs.readFileSync('market-index.json','utf8'));
+          const refs={
+            'package.json': pkg.name,
+            'cordis.patch.yml': /name:\s*'([^']+)'/.exec(patch)?.[1],
+            'client.js': /id:\s*'([^']+)',/.exec(client)?.[1],
+            'market-index.json': idx.plugins[0].name,
+          };
+          const vals=Object.values(refs);
+          console.log(refs);
+          const ok=vals.every(v=>v===pkg.name);
+          if (!ok) { console.error('包名不一致'); process.exit(1) }
+          if (!/^[a-z0-9][a-z0-9._-]*$/.test(pkg.name)) { console.error('npm 名不合法'); process.exit(1) }
+          console.log('名称一致性通过');
+          "
+
+      - name: 单元测试
+        run: node test.mjs
+
+      - name: 抑制表测试
+        run: node test-suppress.mjs
+
+      - name: 语言探测测试
+        run: node test-locale.mjs
+
+      - name: 端到端测试
+        run: node e2e.mjs
+
+      - name: 打包检查
+        run: npm pack --dry-run
+
+      - name: 产出 tarball 供下载
+        if: matrix.node-version == '22'
+        run: |
+          npm pack
+          ls -la *.tgz
+
+      - name: 上传 tarball artifact
+        if: matrix.node-version == '22'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsh-delete-sidebar-session-ci
+          path: '*.tgz'
+          retention-days: 14
+
+  bundle-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 校验 cordis 补丁可解析
+        run: |
+          npm i --no-save yaml@2
+          node -e "
+          const fs=require('fs');
+          const yaml=require('yaml');
+          const doc=yaml.parse(fs.readFileSync('cordis.patch.yml','utf8'));
+          if (!Array.isArray(doc)) { console.error('补丁顶层必须是数组'); process.exit(1) }
+          const insert=doc.find(e=>e.insert);
+          if (!insert) { console.error('缺少 insert 条目'); process.exit(1) }
+          const row=insert.insert[0];
+          if (!row.id || !row.name) { console.error('insert 行缺少 id/name'); process.exit(1) }
+          console.log('cordis 补丁 OK:', row.id, '->', row.name);
+          "
+
+      - name: 校验市场索引
+        run: |
+          node -e "
+          const fs=require('fs');
+          const idx=JSON.parse(fs.readFileSync('market-index.json','utf8'));
+          if (idx.format !== 1) { console.error('format 必须是 1'); process.exit(1) }
+          if (!Array.isArray(idx.plugins) || idx.plugins.length===0) { console.error('plugins 不能为空'); process.exit(1) }
+          for (const p of idx.plugins) {
+            if (!p.name || !Array.isArray(p.versions) || p.versions.length===0) {
+              console.error('插件条目不完整:', p.name); process.exit(1)
+            }
+            for (const v of p.versions) {
+              if (!/^\d+\.\d+\.\d+/.test(v.version)) { console.error('版本号不合法:', v.version); process.exit(1) }
+              if (!v.source || !v.source.type) { console.error('缺少 source:', p.name); process.exit(1) }
+            }
+          }
+          console.log('市场索引 OK:', idx.plugins.map(p=>p.name).join(', '));
+          "
