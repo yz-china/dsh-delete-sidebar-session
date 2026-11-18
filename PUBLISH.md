@@ -166,3 +166,70 @@ DSH → 插件市场 → 设置 → 索引源，粘贴上面的 URL。
 | 装上但菜单没有 | 忘记把包名加进 `dsh.profile.bundles`，或没重启 |
 | 索引校验报 commit 错 | git 来源的 `commit` 不是 40 位小写 SHA |
 | 图标不显示 | `icon` 不是 svg/png/jpeg/webp，或超过 256 KiB |
+
+---
+
+## 7. Trusted Publishing（OIDC，推荐长期方案）
+
+长期 token 会过期（bypass-2FA 的 GAT 在 2027-01 后逐步失效），OIDC 发布不需要任何 token。
+
+### 7.1 前提
+
+| 前提 | 说明 |
+|---|---|
+| 账号已开 2FA | npm 强制要求；不开则无法配置 |
+| 包已发布过 | npm 不允许为不存在的包配置 trusted publisher |
+| 网页 + 交互式 2FA | 该配置**没有 API**，GAT 也不能改这项 |
+
+### 7.2 配置路径
+
+```
+npmjs.com → 你的包 → Settings 标签
+  → Trusted publishing → Add trusted publisher
+  → Provider: GitHub Actions
+```
+
+填三个字段（**提交后不可更改**，填错要删掉重建）：
+
+| 字段 | 本包的值 |
+|---|---|
+| Repository owner | `yz-china` |
+| Repository name | `dsh-delete-sidebar-session` |
+| Workflow name | `release.yml`（只写文件名） |
+| Environment | 留空 |
+
+### 7.3 「允许操作」必须勾「直接发布」
+
+默认只允许 `npm stage publish`。若不勾**直接发布**，CI 的 `npm publish` 会走
+两阶段流程：先建 `0.0.0-stage` 占位包，然后卡住等人工批准——CI 里没人批准，
+表现为发布失败（本包 1.0.0 就踩过这个坑）。
+
+### 7.4 workflow 的三个必要改动
+
+已完成，见 `.github/workflows/release.yml`：
+
+1. `permissions.id-token: write` —— 否则 runner 无法签发 OIDC 令牌
+2. **Node 24** 而不是 22 —— npm 10.x 在 publish 的 PUT 上不带 OIDC 认证头，
+   registry 回 404/401
+3. **从 `.npmrc` 删掉空的 `_authToken` 行** —— `setup-node` 会写入
+   `//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}`，secret 不存在时值为空
+   但**行还在**，npm 会认为要走 token 认证，从而跳过 OIDC 交换。这一条最隐蔽。
+
+### 7.5 验证是否真的走了 OIDC
+
+打 tag 后看 `publish-npm` 的日志：
+
+- 出现 `尝试通过 Trusted Publishing (OIDC) 发布` → 走的是 OIDC ✅
+- 出现 `使用 NPM_TOKEN secret 发布` → 还有 secret 没删，走的是 token
+- 出现 `未配置 NPM_TOKEN secret，跳过 npm 发布` → **注意**：旧版 workflow 用
+  `exit 0` 跳过，job 会显示成功但什么都没发。判断发布是否真的发生，要以
+  registry 上的版本号为准，不能只看 job 状态。
+
+### 7.6 验证通过后收紧访问策略
+
+包设置页的「出版访问」可切到：
+
+> 要求双因素认证并禁止绕过双步验证令牌（推荐）
+
+切换后，带 `bypass_2fa` 的旧 GAT 立即失去发布能力，但 **OIDC 完全不受影响**。
+所以务必先确认 OIDC 能发布，再收紧。
