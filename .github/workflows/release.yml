@@ -8,6 +8,9 @@ on:
 
 permissions:
   contents: write
+  # OIDC 令牌签发：Trusted Publishing 靠它向 npm 证明「这次发布来自这个仓库的
+  # 这个 workflow」，从而完全不需要长期 token。
+  id-token: write
 
 jobs:
   build:
@@ -19,7 +22,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Show toolchain
         run: node -v && npm -v
@@ -64,18 +67,38 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Node 24 自带 npm 11+，这是 OIDC 发布的前提：npm 10.x 不会在 PUT 请求上
+      # 附带 OIDC 认证头，registry 会回 404/401。
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Show toolchain
+        run: |
+          node -v
+          npm -v
+
+      # 两种模式：
+      #   A. 已配置 Trusted Publishing（推荐）→ 不设 NODE_AUTH_TOKEN，npm 自动用 OIDC
+      #   B. 仍持有 NPM_TOKEN secret → 回退到 token 认证
+      # 判据是 secret 是否存在，两条路都能发布，不需要改 workflow。
       - name: Publish to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          if [ -z "$NODE_AUTH_TOKEN" ]; then
-            echo "::warning::未配置 NPM_TOKEN secret，跳过 npm 发布"
-            exit 0
+          set -euo pipefail
+          if [ -n "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "::notice::使用 NPM_TOKEN secret 发布"
+            npm publish --access public
+          else
+            echo "::notice::未配置 NPM_TOKEN，尝试通过 Trusted Publishing (OIDC) 发布"
+            # 关键：清掉 setup-node 写进 .npmrc 的空 authToken 行。
+            # 留着它会让 npm 认为要走 token 认证，从而不发起 OIDC 交换。
+            if [ -f "$NPM_CONFIG_USERCONFIG" ]; then
+              sed -i '/_authToken/d' "$NPM_CONFIG_USERCONFIG"
+              echo "已从 .npmrc 移除 authToken 行"
+            fi
+            npm publish --access public
           fi
-          npm publish --access public
