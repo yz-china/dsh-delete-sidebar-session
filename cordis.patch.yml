@@ -1,0 +1,18 @@
+# dsh-session-purge bundle patch.
+#
+# 只挂载本包一行插件，不替换任何官方组件。
+# Host 半负责：解析会话路径 → 删除会话目录 / 投影缓存 / 工作区索引引用 / 本地备份。
+# Client 半负责：在 `sidebar.workspaces.session.menu.item` 插槽里加一条菜单项。
+#
+# 同一 profile 里不要出现两行同 id：两份实例会各自注册 /session-purge/api
+# 前缀路由，重复路由会让整棵插件树启动失败。
+- insert:
+    - id: session-purge
+      name: 'dsh-session-purge'
+      config:
+        # 总开关。
+        enabled: true
+        # 未显式给出 --home 时，从这些环境变量推断 DSH_HOME。
+        homeEnv: DSH_HOME
+        # 单次删除最多清理多少个备份文件（含项目目录残留），防止误扫全盘。
+        maxBackupScanEntries: 20000

@@ -1,0 +1,85 @@
+{
+  "format": 1,
+  "title": {
+    "en": "DSH Plugins by yz-china",
+    "zh": "yz-china 的 DSH 插件"
+  },
+  "description": {
+    "en": "Community DeepSeek Harness plugins.",
+    "zh": "社区 DeepSeek Harness 插件。"
+  },
+  "metadata": {
+    "categories": {
+      "session": {
+        "title": {
+          "en": "Session management",
+          "zh": "会话管理"
+        }
+      }
+    },
+    "labels": {
+      "new": {
+        "title": {
+          "en": "New",
+          "zh": "新上架"
+        }
+      }
+    },
+    "sortKeys": {
+      "stars": {
+        "title": {
+          "en": "Stars",
+          "zh": "星标"
+        },
+        "order": "desc"
+      }
+    }
+  },
+  "plugins": [
+    {
+      "name": "dsh-session-purge",
+      "title": {
+        "en": "Session Purge",
+        "zh": "会话彻底删除"
+      },
+      "description": {
+        "en": "Right-click a session in the sidebar to delete it permanently: log directory, projection cache, workspace index entry and local backups. Works immediately, no restart.",
+        "zh": "在侧边栏右键会话即可彻底删除：日志目录、投影缓存、工作区索引登记与本地备份一并清理。立即生效，无需重启。"
+      },
+      "author": "yz-china",
+      "homepage": "https://github.com/yz-china/dsh-session-purge#readme",
+      "repository": {
+        "url": "https://github.com/yz-china/dsh-session-purge"
+      },
+      "metadata": {
+        "category": "session",
+        "keywords": [
+          "deepseek-harness",
+          "dsh-plugin",
+          "session",
+          "delete",
+          "cleanup",
+          "sidebar"
+        ],
+        "labels": [
+          "new"
+        ],
+        "sortKeys": {
+          "stars": 0
+        }
+      },
+      "versions": [
+        {
+          "version": "1.0.0",
+          "publishTimestamp": 1763470200,
+          "source": {
+            "type": "npm"
+          },
+          "engines": {
+            "dsh": ">=0.2.0"
+          }
+        }
+      ]
+    }
+  ]
+}

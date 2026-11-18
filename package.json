@@ -1,0 +1,93 @@
+{
+  "name": "dsh-session-purge",
+  "version": "1.0.0",
+  "description": "Permanently delete a DeepSeek Harness session from the sidebar context menu — session log, projection cache, workspace index entry and local backups, all at once, no restart needed.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.js",
+  "icon": "./icon.svg",
+  "author": {
+    "name": "yz-china",
+    "url": "https://github.com/yz-china"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yz-china/dsh-session-purge.git"
+  },
+  "homepage": "https://github.com/yz-china/dsh-session-purge#readme",
+  "bugs": {
+    "url": "https://github.com/yz-china/dsh-session-purge/issues"
+  },
+  "keywords": [
+    "deepseek",
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "session",
+    "session-management",
+    "delete",
+    "cleanup",
+    "sidebar"
+  ],
+  "engines": {
+    "node": ">=22",
+    "dsh": ">=0.2.0"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "icon.svg",
+    "README.md",
+    "README.zh.md",
+    "INSTALL-NOTES.md",
+    "LICENSE",
+    "test.mjs",
+    "test-suppress.mjs",
+    "test-locale.mjs",
+    "e2e.mjs"
+  ],  "scripts": {
+    "test": "node test.mjs && node test-suppress.mjs && node test-locale.mjs && node e2e.mjs"
+  },
+  "meta": {
+    "title": {
+      "en": "Session Purge",
+      "zh": "会话彻底删除"
+    },
+    "description": {
+      "en": "Right-click a session in the sidebar to delete it permanently: log directory, projection cache, workspace index entry and local backups. Works immediately, no restart.",
+      "zh": "在侧边栏右键会话即可彻底删除：日志目录、投影缓存、工作区索引登记与本地备份一并清理。立即生效，无需重启。"
+    }
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-workspace",
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-api-session-controller",
+        "@deepseek-ai/dsh-api-workspace-controller"
+      ]
+    },
+    "compatibility": {
+      "dsh": ">=0.2.0",
+      "profiles": [
+        "desktop",
+        "web"
+      ]
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
