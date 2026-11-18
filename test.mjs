@@ -95,9 +95,12 @@ async function main() {
 
   await ok('isStrictlyInside 拒绝自身与越界', async () => {
     const strict = internals.isStrictlyInside
-    assert.equal(strict('C:\\a', 'C:\\a\\b'), true)
-    assert.equal(strict('C:\\a', 'C:\\a'), false)
-    assert.equal(strict('C:\\a', 'C:\\a\\..\\b'), false)
+    // 用 posix 路径测：Windows 风格字符串在 Linux runner 上不是绝对路径，
+    // path.relative 会返回原串，让断言失去意义。这里验证的是语义而非分隔符。
+    assert.equal(strict('/a', '/a/b'), true)
+    assert.equal(strict('/a', '/a'), false)
+    assert.equal(strict('/a', '/a/../b'), false)
+    assert.equal(strict('/a', '/b/c'), false)
   })
 
   await ok('定位会话目录（按 cwd 推导 / cwd 缺失全树查找）', async () => {
