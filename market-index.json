@@ -47,9 +47,9 @@
         "zh": "在侧边栏右键会话即可彻底删除：日志目录、投影缓存、工作区索引登记与本地备份一并清理。立即生效，无需重启。"
       },
       "author": "yz-china",
-      "homepage": "https://github.com/yz-china/dsh-session-purge#readme",
+      "homepage": "https://github.com/yz-china/dsh-delete-sidebar-session#readme",
       "repository": {
-        "url": "https://github.com/yz-china/dsh-session-purge"
+        "url": "https://github.com/yz-china/dsh-delete-sidebar-session"
       },
       "metadata": {
         "category": "session",

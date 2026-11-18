@@ -41,7 +41,7 @@ node test.mjs && node test-suppress.mjs && node test-locale.mjs && node e2e.mjs
 先建**空**仓库（不要勾 README / .gitignore / LICENSE，避免冲突），然后：
 
 ```bash
-git remote add origin https://github.com/yz-china/dsh-session-purge.git
+git remote add origin https://github.com/yz-china/dsh-delete-sidebar-session.git
 git push -u origin main
 ```
 
@@ -59,7 +59,7 @@ npm publish --access public
 > 校验：`npm view dsh-session-purge version` 应返回 `1.0.0`。
 
 如果 `dsh-session-purge` 这个包名已被占用，改 `package.json` 的 `name`
-（例如 `@yz-china/dsh-session-purge`），并同步修改 `market-index.json` 里的
+（例如 `@yz-china/dsh-delete-sidebar-session`），并同步修改 `market-index.json` 里的
 `name` 字段——两处必须完全一致。
 
 ### 想用 GitHub Release 的 tarball 而不是 npm？
@@ -69,8 +69,8 @@ npm publish --access public
 ```json
 "install": {
   "preferred": "tarball",
-  "tarball": "https://github.com/yz-china/dsh-session-purge/releases/download/v1.0.0/dsh-session-purge-1.0.0.tgz",
-  "git": "https://github.com/yz-china/dsh-session-purge.git"
+  "tarball": "https://github.com/yz-china/dsh-delete-sidebar-session/releases/download/v1.0.0/dsh-session-purge-1.0.0.tgz",
+  "git": "https://github.com/yz-china/dsh-delete-sidebar-session.git"
 }
 ```
 
@@ -94,14 +94,14 @@ gh release create v1.0.0 dsh-session-purge-1.0.0.tgz --title "v1.0.0" --notes "�
 | `publishTimestamp` | 换成真实发布时刻（Unix 秒），`date +%s` 可取 |
 
 GitHub 用户名已填好 `yz-china`，`homepage` 与 `repository.url` 都指向
-`https://github.com/yz-china/dsh-session-purge`。
+`https://github.com/yz-china/dsh-delete-sidebar-session`。
 
 ### 4.2 如果改用 git 来源而不是 npm
 
 把 `versions[0].source` 换成：
 
 ```json
-{ "type": "git", "url": "https://github.com/yz-china/dsh-session-purge", "commit": "<40位小写十六进制SHA>" }
+{ "type": "git", "url": "https://github.com/yz-china/dsh-delete-sidebar-session", "commit": "<40位小写十六进制SHA>" }
 ```
 
 > `commit` 必须是**真实提交的完整 SHA**（`git rev-parse HEAD` 的输出）。
@@ -137,7 +137,7 @@ git add docs && git commit -m "chore: publish market index" && git push
 索引地址即：
 
 ```
-https://yz-china.github.io/dsh-session-purge/index.json
+https://yz-china.github.io/dsh-delete-sidebar-session/index.json
 ```
 
 ### 4.5 在 DSH 里添加索引
