@@ -107,10 +107,40 @@ for (const session of this._ctx.sessions.list()) {
 
 ```bash
 node test.mjs          # 11 项：路径编码、越界拒绝、四类目标清理、注册表优先/降级、liveAgent、幂等、引用判定
-node e2e.mjs           # 6 项：真实 HTTP 路由、跨站 403、非法 id、注册表收尾、文件系统终态
 node test-suppress.mjs # 6 项：先复现「refresh 后行复活」，再验证抑制表挡住它且不误伤邻居
 node test-locale.mjs   # 8 项：语言探测优先级，含「系统英文 + DSH 中文」这个真实缺陷
+node test-archived.mjs # 6 项：三处登记同时摘除、跨工作区、脏索引自愈、detach 缺失时如实报错
+node test-timeout.mjs  # 7 项：确认框超时/取消/Esc/重复点击，含「refresh 挂住仍能收尾」
+node e2e.mjs           # 6 项：真实 HTTP 路由、跨站 403、非法 id、注册表收尾、文件系统终态
 ```
+
+## 三个踩过的坑（供改代码时参考）
+
+### 1. 只清归档不清成员登记 → 删完卡死
+
+宿主的 `Workspace.sessionIds` 是**成员登记**，与 `archivedSessionIds` **互相独立**。
+只调 `unarchiveSession` 时，id 仍留在 `sessionIds` 里，而 `candidateMatches` 靠
+`sessionPaths` 缓存判断有效性——文件删了缓存不失效，于是前端继续渲染这一行，
+去等一个已经不存在的会话实例。
+
+**必须三处一起摘**：`detachSession` / `unarchiveSession` / `unpinSession`。
+
+### 2. 删完立刻 `refresh()` → 行复活，甚至挂住
+
+`sessionQuery.listSessions()` 会把 `ctx.sessions.list()` 里所有 **live session
+无条件合并进列表**。会话文件删了但 live 条目还在内存时，`refresh()` 用磁盘
+baseline 重建，live 条目又进来了。
+
+- 应对「复活」：抑制表，每次列表重建后重新调 `handleSessionRemoved`
+- 应对「挂住」：**`refresh()` 必须有上界**（当前 8 秒）且失败可忽略——
+  列表对齐只是收尾，删除本身在 Host 侧早已完成（实测约 60ms）
+
+### 3. 确认框 `await onConfirm()` 无上界 → 用户被困住
+
+按钮禁用后若 promise 永不 settle，用户既点不了取消也关不掉窗口。
+
+现在的三重保险：`callHost` 用 `AbortController`（45 秒）、`onConfirm` 竞速超时、
+**取消按钮永不禁用且 Esc 始终有效**。
 
 ## 已知限制
 
@@ -118,3 +148,5 @@ node test-locale.mjs   # 8 项：语言探测优先级，含「系统英文 + DS
   磁盘上也没了，所以不会再出现。若仍在，说明宿主内存里还挂着 Agent，重启即净。
 - 插件拿不到宿主 Session 的 dispose 句柄，**不会强行杀 live Agent**；只保证界面上立即消失。
 - 全局会话搜索索引默认是 `:memory:`，无需清理；若配置成磁盘文件，需自行重启刷新。
+- 网络不通时装不上新版本时，可本地 `npm pack` 后手动解包到 `node_modules`，
+  再手写 `dependencies`，不必依赖 registry。
