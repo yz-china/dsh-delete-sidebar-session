@@ -17,6 +17,9 @@ window.__ModuleLoader__.load({
     const NS = 'session-purge'
     const API = '/session-purge/api'
 
+    /** 单次删除的超时上限（毫秒）。超过即在弹窗里报错并恢复按钮，绝不无限等待。 */
+    const TIMEOUT_MS = 45000
+
     const ZH = {
       menuLabel: '彻底删除会话',
       menuLabelRunning: '彻底删除会话（运行中）',
@@ -32,6 +35,7 @@ window.__ModuleLoader__.load({
       done: '已删除',
       partial: '部分失败',
       failed: '删除失败',
+      timeout: '宿主响应超时，删除可能未完成',
     }
     const EN = {
       menuLabel: 'Delete session permanently',
@@ -48,6 +52,7 @@ window.__ModuleLoader__.load({
       done: 'Deleted',
       partial: 'Partly failed',
       failed: 'Delete failed',
+      timeout: 'Host did not respond in time; the delete may not have completed',
     }
 
     const STYLE = `
@@ -125,19 +130,32 @@ window.__ModuleLoader__.load({
      * @param {object} payload - 请求体。
      * @returns {Promise<any>} Host 返回的 value。
      */
-    async function callHost(action, payload) {
-      const res = await fetch(`${API}/${action}`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify(payload),
-      })
-      const text = await res.text()
-      let doc = null
-      try { doc = text.length > 0 ? JSON.parse(text) : null } catch { /* 非 JSON */ }
-      if (!res.ok || doc === null) throw new Error(doc?.error ?? `HTTP ${res.status}`)
-      if (doc.ok !== true) throw new Error(doc.error ?? 'unknown host failure')
-      return doc.value
+    async function callHost(action, payload, timeoutMs = TIMEOUT_MS) {
+      // AbortController 让挂住的请求能被真正中断，而不是只靠外层竞速把它当成失败。
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), timeoutMs)
+      try {
+        const res = await fetch(`${API}/${action}`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          credentials: 'same-origin',
+          signal: controller.signal,
+          body: JSON.stringify(payload),
+        })
+        const text = await res.text()
+        let doc = null
+        try { doc = text.length > 0 ? JSON.parse(text) : null } catch { /* 非 JSON */ }
+        if (!res.ok || doc === null) throw new Error(doc?.error ?? `HTTP ${res.status}`)
+        if (doc.ok !== true) throw new Error(doc.error ?? 'unknown host failure')
+        return doc.value
+      } catch (error) {
+        if (error?.name === 'AbortError') {
+          throw new Error(`宿主响应超时（${Math.round(timeoutMs / 1000)}s）：${action}`)
+        }
+        throw error
+      } finally {
+        clearTimeout(timer)
+      }
     }
 
     /**
@@ -221,21 +239,38 @@ window.__ModuleLoader__.load({
         overlay.addEventListener('mousedown', (event) => {
           if (event.target === overlay) finish(false)
         })
+        // 取消按钮始终可用：即使删除流程挂住，也必须能关掉这个框。
         cancelBtn.addEventListener('click', () => finish(false))
         confirmBtn.addEventListener('click', () => {
+          if (confirmBtn.disabled) return
           const run = async () => {
             confirmBtn.disabled = true
-            cancelBtn.disabled = true
+            cancelBtn.disabled = false          // 关键：不允许把用户困在弹窗里
+            cancelBtn.textContent = t.cancel
             confirmBtn.textContent = t.working
             errorBox.style.display = 'none'
+
+            // 超时保护：任何一步挂住（宿主无响应、事件循环被占）都会在 45 秒后结束，
+            // 把错误显示在框内并恢复按钮，而不是永远停在「删除中…」。
+            let timedOut = false
+            const timer = setTimeout(() => { timedOut = true }, TIMEOUT_MS)
+
             try {
-              await state.onConfirm()
+              await Promise.race([
+                state.onConfirm(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error(t.timeout)), TIMEOUT_MS)),
+              ])
+              clearTimeout(timer)
+              if (settled) return
               finish(true)
             } catch (failure) {
+              clearTimeout(timer)
+              if (settled) return
               confirmBtn.disabled = false
               cancelBtn.disabled = false
               confirmBtn.textContent = t.confirm
-              errorBox.textContent = failure instanceof Error ? failure.message : String(failure)
+              const message = failure instanceof Error ? failure.message : String(failure)
+              errorBox.textContent = timedOut ? `${message}（${TIMEOUT_MS / 1000}s）` : message
               errorBox.style.display = ''
             }
           }

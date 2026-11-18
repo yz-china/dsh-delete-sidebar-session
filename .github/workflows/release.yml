@@ -30,6 +30,7 @@ jobs:
           node test-suppress.mjs
           node test-locale.mjs
           node test-archived.mjs
+          node test-timeout.mjs
           node e2e.mjs
 
       - name: Pack

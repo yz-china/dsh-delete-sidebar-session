@@ -1,6 +1,6 @@
 {
   "name": "dsh-delete-sidebar-session",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Permanently delete a DeepSeek Harness session from the sidebar context menu — session log, projection cache, workspace index entry and local backups, all at once, no restart needed.",
   "license": "MIT",
   "type": "module",
@@ -53,10 +53,11 @@
     "test-suppress.mjs",
     "test-locale.mjs",
     "test-archived.mjs",
+    "test-timeout.mjs",
     "e2e.mjs"
   ],
   "scripts": {
-    "test": "node test.mjs && node test-suppress.mjs && node test-locale.mjs && node test-archived.mjs && node e2e.mjs"
+    "test": "node test.mjs && node test-suppress.mjs && node test-locale.mjs && node test-archived.mjs && node test-timeout.mjs && node e2e.mjs"
   },
   "meta": {
     "title": {
